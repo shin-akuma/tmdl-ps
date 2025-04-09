@@ -10,7 +10,7 @@ $nugets = @(
     @{
         name = "Microsoft.AnalysisServices.NetCore.retail.amd64"
         ;
-        version = "19.69.6.2"
+        version = "19.84.1"
         ;
         path = @("lib\netcoreapp3.0\Microsoft.AnalysisServices.Tabular.dll"
         , "lib\netcoreapp3.0\Microsoft.AnalysisServices.Tabular.Json.dll"
@@ -30,9 +30,17 @@ $nugets = @(
     @{
         name = "Microsoft.Identity.Client"
         ;
-        version = "4.43.0"
+        version = "4.56.0"
         ;
         path = @("lib\netcoreapp2.1\Microsoft.Identity.Client.dll")
+    }
+    ,
+    @{
+        name = "Microsoft.IdentityModel.Abstractions"
+        ;
+        version = "6.22.0"
+        ;
+        path = @("lib\netstandard2.0\Microsoft.IdentityModel.Abstractions.dll")
     }
 )
 

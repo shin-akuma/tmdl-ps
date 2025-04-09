@@ -1019,7 +1019,10 @@
           },
           {
             "name": "Margin (ly)",
-            "expression": "CALCULATE([Margin], SAMEPERIODLASTYEAR('Calendar'[Date]))",
+            "expression": [
+              "CALCULATE([Margin], SAMEPERIODLASTYEAR('Calendar'[Date]))",
+              ""
+            ],
             "formatString": "$ #,##0",
             "lineageTag": "bdf081eb-1952-439f-96b1-a27e1a13f1a3"
           },
@@ -1036,7 +1039,11 @@
           },
           {
             "name": "Sales Qty by Delivery Date",
-            "expression": "CALCULATE([Sales Qty], USERELATIONSHIP('Sales'[Delivery Date],'Calendar'[Date]))",
+            "expression": [
+              "CALCULATE([Sales Qty], USERELATIONSHIP('Sales'[Delivery Date],'Calendar'[Date]))",
+              "",
+              ""
+            ],
             "formatString": "#,##0",
             "lineageTag": "c85c43d0-a2e1-4d90-a8a0-4009499b6eea"
           },
@@ -1627,7 +1634,8 @@
                 "        , BLANK()",
                 "        , \" | \"    ",
                 "        & IF (vGrowth >= 0, \"▲\" , \"▼\") & FORMAT(vGrowth, \"0%\")",
-                "    )"
+                "    )",
+                ""
               ],
               "ordinal": 2,
               "formatStringDefinition": {
@@ -1673,7 +1681,8 @@
                 "        , BLANK()",
                 "        , \" | \"    ",
                 "        & IF (vGrowth >= 0, \"▲\" , \"▼\") & FORMAT(vGrowth, \"0%\")",
-                "    )"
+                "    )",
+                ""
               ],
               "ordinal": 4,
               "formatStringDefinition": {
@@ -1735,6 +1744,7 @@
             "name": "Code",
             "dataType": "int64",
             "isNameInferred": true,
+            "isDataTypeInferred": true,
             "sourceColumn": "[Code]",
             "formatString": "0",
             "lineageTag": "a5db8d3b-70af-483d-bcab-5c0fcc7478c2",
@@ -1751,6 +1761,7 @@
             "name": "Order",
             "dataType": "int64",
             "isNameInferred": true,
+            "isDataTypeInferred": true,
             "sourceColumn": "[Order]",
             "formatString": "0",
             "lineageTag": "c7824b9c-021c-4bff-b363-c04b3cb2c681",
@@ -1767,6 +1778,7 @@
             "name": "Measure",
             "dataType": "string",
             "isNameInferred": true,
+            "isDataTypeInferred": true,
             "sourceColumn": "[Measure]",
             "lineageTag": "d8e3ae78-fda2-49e6-b8cb-b6257e927261",
             "summarizeBy": "none",
@@ -1782,6 +1794,7 @@
             "name": "Area",
             "dataType": "string",
             "isNameInferred": true,
+            "isDataTypeInferred": true,
             "sourceColumn": "[Area]",
             "lineageTag": "364ae39d-73bd-4527-91e4-0e649a23d8a7",
             "summarizeBy": "none",
@@ -1797,6 +1810,7 @@
             "name": "Format",
             "dataType": "string",
             "isNameInferred": true,
+            "isDataTypeInferred": true,
             "sourceColumn": "[Format]",
             "lineageTag": "ec17695c-dc59-4674-bdaa-bbdeb4131593",
             "summarizeBy": "none",
@@ -1815,6 +1829,7 @@
             "source": {
               "type": "calculated",
               "expression": [
+                "",
                 "DATATABLE (",
                 "    \"Code\", INTEGER,",
                 "    \"Order\", INTEGER,",
@@ -1828,7 +1843,8 @@
                 "        { 4, 2, \"Sales Qty\", \"Sales\", \"#,#\" },",
                 "        { 5, 2, \"Sales Margin\", \"Sales\", \"\\$#,0.00;(\\$#,0.00);\\$#,0.00\" }",
                 "    } ",
-                ")"
+                ")",
+                ""
               ]
             }
           }
@@ -1894,7 +1910,7 @@
             "name": "Value Avg per Month",
             "expression": [
               "",
-              "AVERAGEX(VALUES('Calendar'[Month (Year)]), [Value])"
+              " AVERAGEX(VALUES('Calendar'[Month (Year)]), [Value])"
             ],
             "lineageTag": "ba87b819-2147-443b-aaeb-8ae1729c6550",
             "annotations": [
