@@ -3,6 +3,10 @@ name: Deploy to Power BI
 on:
   workflow_dispatch:
     inputs:
+      client:
+        description: 'Client name (e.g., NZX)'
+        required: true
+        type: string
       version:
         description: 'Release version to deploy (e.g., v1.0.0)'
         required: true
@@ -18,14 +22,44 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set release version
-        id: set_version
+      - name: Set client and version
+        id: set_variables
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "CLIENT=${{ github.event.inputs.client }}" >> $GITHUB_ENV
             echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
           else
+            # Default client for release trigger or use from repository variable
+            echo "CLIENT=${{ vars.DEFAULT_CLIENT }}" >> $GITHUB_ENV
             echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
           fi
+          
+          # Convert client name to uppercase for consistency in secret names
+          echo "CLIENT_UPPER=$(echo ${{ github.event.inputs.client || vars.DEFAULT_CLIENT }} | tr '[:lower:]' '[:upper:]')" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Set dynamic secret references
+        id: set_secrets
+        run: |
+          # Dynamically access secrets based on client name
+          CLIENT_SECRET_PREFIX="${{ env.CLIENT_UPPER }}"
+          
+          # Extract secrets (Note: This assigns the secret values to environment variables)
+          echo "AZURE_CLIENT_ID<<EOF" >> $GITHUB_ENV
+          echo "${{ secrets[format('{0}_AZURE_CLIENT_ID', env.CLIENT_UPPER)] }}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          
+          echo "AZURE_PASSWORD<<EOF" >> $GITHUB_ENV
+          echo "${{ secrets[format('{0}_AZURE_PASSWORD', env.CLIENT_UPPER)] }}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          
+          echo "AZURE_TENANT_ID<<EOF" >> $GITHUB_ENV
+          echo "${{ secrets[format('{0}_AZURE_TENANT_ID', env.CLIENT_UPPER)] }}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          
+          echo "POWERBI_WORKSPACE<<EOF" >> $GITHUB_ENV
+          echo "${{ secrets[format('{0}_POWERBI_WORKSPACE', env.CLIENT_UPPER)] }}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
         shell: bash
 
       - name: Download release artifact
@@ -62,14 +96,15 @@ jobs:
       - name: Login to Azure
         shell: pwsh
         run: |
-          $securePassword = ConvertTo-SecureString "${{ secrets.AZURE_PASSWORD }}" -AsPlainText -Force
-          $credential = New-Object System.Management.Automation.PSCredential("${{ secrets.AZURE_USERNAME }}", $securePassword)
-          Connect-AzAccount -Credential $credential -Tenant "${{ secrets.AZURE_TENANT_ID }}" -ServicePrincipal
+          $securePassword = ConvertTo-SecureString "${{ env.AZURE_PASSWORD }}" -AsPlainText -Force
+          $credential = New-Object System.Management.Automation.PSCredential("${{ env.AZURE_CLIENT_ID }}", $securePassword)
+          Connect-AzAccount -Credential $credential -Tenant "${{ env.AZURE_TENANT_ID }}" -ServicePrincipal
 
       - name: Deploy to Power BI
         shell: pwsh
         run: |
-          $workspace = Get-FabricWorkspace -workspaceName "${{ secrets.POWERBI_WORKSPACE }}"
+          Write-Output "Deploying to workspace: ${{ env.POWERBI_WORKSPACE }} for client: ${{ env.CLIENT }}"
+          $workspace = Get-FabricWorkspace -workspaceName "${{ env.POWERBI_WORKSPACE }}"
           
           $semanticModelPath = Get-ChildItem -Path "./extracted" -Filter "*.SemanticModel" | Select-Object -First 1 -ExpandProperty FullName
           $reportPath = Get-ChildItem -Path "./extracted" -Filter "*.Report" | Select-Object -First 1 -ExpandProperty FullName
@@ -78,4 +113,4 @@ jobs:
           
           $semanticReportImport = Import-FabricItem -workspaceId $workspace.id -path $reportPath -itemProperties @{"semanticModelId" = $semanticModelImport.Id}
           
-          Write-Output "Deployment completed successfully!"
+          Write-Output "Deployment completed successfully for client: ${{ env.CLIENT }}!"
