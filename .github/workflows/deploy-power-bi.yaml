@@ -1,0 +1,81 @@
+name: Deploy to Power BI
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to deploy (e.g., v1.0.0)'
+        required: true
+        type: string
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set release version
+        id: set_version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          fi
+        shell: bash
+
+      - name: Download release artifact
+        uses: robinraju/release-downloader@v1.8
+        with:
+          repository: ${{ github.repository }}
+          tag: ${{ env.VERSION }}
+          fileName: "*.zip"
+          out-file-path: "./artifact"
+
+      - name: Unzip artifact
+        run: |
+          Get-ChildItem -Path ./artifact -Filter *.zip | ForEach-Object {
+            Expand-Archive -Path $_.FullName -DestinationPath ./extracted -Force
+          }
+        shell: pwsh
+
+      - name: Setup PowerShell modules
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path ".\modules" -ErrorAction SilentlyContinue | Out-Null
+          
+          @("https://raw.githubusercontent.com/microsoft/Analysis-Services/master/pbidevmode/fabricps-pbip/FabricPS-PBIP.psm1"
+          , "https://raw.githubusercontent.com/microsoft/Analysis-Services/master/pbidevmode/fabricps-pbip/FabricPS-PBIP.psd1") |% {
+              Invoke-WebRequest -Uri $_ -OutFile ".\modules\$(Split-Path $_ -Leaf)"
+          }
+          
+          if(-not (Get-Module Az.Accounts -ListAvailable)) { 
+              Install-Module Az.Accounts -Scope CurrentUser -Force
+          }
+          
+          Import-Module ".\modules\FabricPS-PBIP" -Force
+
+      - name: Login to Azure
+        shell: pwsh
+        run: |
+          $securePassword = ConvertTo-SecureString "${{ secrets.AZURE_PASSWORD }}" -AsPlainText -Force
+          $credential = New-Object System.Management.Automation.PSCredential("${{ secrets.AZURE_USERNAME }}", $securePassword)
+          Connect-AzAccount -Credential $credential -Tenant "${{ secrets.AZURE_TENANT_ID }}" -ServicePrincipal
+
+      - name: Deploy to Power BI
+        shell: pwsh
+        run: |
+          $workspace = Get-FabricWorkspace -workspaceName "${{ secrets.POWERBI_WORKSPACE }}"
+          
+          $semanticModelPath = Get-ChildItem -Path "./extracted" -Filter "*.SemanticModel" | Select-Object -First 1 -ExpandProperty FullName
+          $reportPath = Get-ChildItem -Path "./extracted" -Filter "*.Report" | Select-Object -First 1 -ExpandProperty FullName
+          
+          $semanticModelImport = Import-FabricItem -workspaceId $workspace.id -path $semanticModelPath
+          
+          $semanticReportImport = Import-FabricItem -workspaceId $workspace.id -path $reportPath -itemProperties @{"semanticModelId" = $semanticModelImport.Id}
+          
+          Write-Output "Deployment completed successfully!"
