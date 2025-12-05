@@ -120,13 +120,13 @@ try {
     # Import semantic model
     Write-Host "`nImporting semantic model from: $semanticModelPath"
     $semanticModelImport = Import-FabricItem -workspaceId $workspace.id -path $semanticModelPath
-    Write-Host "Semantic model imported with ID: $($semanticModelImport.Id)" -ForegroundColor Green
+    Write-Host "Semantic model imported with ID: $($semanticModelImport.id)" -ForegroundColor Green
     
     # Import report with reference to the semantic model
     Write-Host "`nImporting report from: $reportPath"
     $reportImport = Import-FabricItem -workspaceId $workspace.id -path $reportPath `
-        -itemProperties @{ "semanticModelId" = $semanticModelImport.Id }
-    Write-Host "Report imported with ID: $($reportImport.Id)" -ForegroundColor Green
+        -itemProperties @{ "semanticModelId" = $semanticModelImport.id }
+    Write-Host "Report imported with ID: $($reportImport.id)" -ForegroundColor Green
     
     Write-Host "`nDeployment completed successfully!" -ForegroundColor Green
 }
